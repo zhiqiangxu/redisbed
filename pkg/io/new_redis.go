@@ -8,4 +8,5 @@ type NewRedisInput struct {
 // NewRedisOutput for output
 type NewRedisOutput struct {
 	BaseResp
+	Port uint16 `json:"port"`
 }

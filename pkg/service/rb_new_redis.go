@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -14,19 +15,25 @@ import (
 // NewRedis impl
 func (rb *RedisBed) NewRedis(input io.NewRedisInput) (output io.NewRedisOutput) {
 
-	l, err := port.ListenTCP()
+	var (
+		l   net.Listener
+		err error
+	)
+	if input.Port == 0 {
+		l, err = port.ListenTCP()
+	} else {
+		l, err = net.Listen("tcp", fmt.Sprintf(":%d", input.Port))
+	}
+
 	if err != nil {
 		output.Code = http.StatusInternalServerError
 		output.Msg = err.Error()
 		return
 	}
 
-	err = redis.Start(l)
-	if err != nil {
-		output.Code = http.StatusInternalServerError
-		output.Msg = err.Error()
-		return
-	}
+	output.Port = uint16(l.Addr().(*net.TCPAddr).Port)
+
+	go redis.Start(l)
 
 	info := model.RedisInfo{Port: uint16(l.Addr().(*net.TCPAddr).Port), Created: time.Now()}
 	err = model.RedisInfoManager().Insert(info)

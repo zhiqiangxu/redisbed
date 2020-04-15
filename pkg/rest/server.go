@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zhiqiangxu/redisbed/pkg/config"
 	"github.com/zhiqiangxu/redisbed/pkg/logger"
+	"github.com/zhiqiangxu/redisbed/pkg/service"
 	"github.com/zhiqiangxu/redisbed/pkg/store"
 	"github.com/zhiqiangxu/util/signal"
 	"go.uber.org/zap"
@@ -38,6 +39,10 @@ func (s *Server) Start() {
 	err := store.Instance().Bootstrap()
 	if err != nil {
 		logger.Instance().Fatal("Bootstrap", zap.Error(err))
+	}
+	err = service.Instance().StartAllRedis()
+	if err != nil {
+		logger.Instance().Fatal("StartAllRedis", zap.Error(err))
 	}
 
 	server := &http.Server{Addr: conf.HTTPAddr, Handler: s.app}

@@ -3,11 +3,15 @@ package redis
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/tidwall/redcon"
+	"github.com/zhiqiangxu/mondis"
+	"github.com/zhiqiangxu/mondis/kv"
 	"github.com/zhiqiangxu/redisbed/pkg/logger"
+	"github.com/zhiqiangxu/redisbed/pkg/store"
 	"go.uber.org/zap"
 )
 
@@ -18,22 +22,19 @@ func StartByPort(port uint16) (err error) {
 		return
 	}
 
-	err = Start(l)
+	go Start(l)
 	return
 }
 
 // Start a redis server on port
-func Start(l net.Listener) (err error) {
+func Start(l net.Listener) (serr error) {
 
-	port := l.Addr().(*net.TCPAddr).Port
-	logger.Instance().Info("New Redis", zap.Int("port", port))
+	port := uint16(l.Addr().(*net.TCPAddr).Port)
+	logger.Instance().Info("New Redis", zap.Uint16("port", port))
 
-	// db := meta.Instance().GetDB()
+	kvdb := store.Instance().GetRedisDB(port)
 
-	var mu sync.RWMutex
-	var items = make(map[string][]byte)
-
-	err = redcon.Serve(l,
+	serr = redcon.Serve(l,
 		func(conn redcon.Conn, cmd redcon.Command) {
 			switch strings.ToLower(string(cmd.Args[0])) {
 			default:
@@ -44,41 +45,127 @@ func Start(l net.Listener) (err error) {
 				conn.WriteString("OK")
 				conn.Close()
 			case "set":
-				if len(cmd.Args) != 3 {
+				if len(cmd.Args) < 3 {
 					conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 					return
 				}
-				mu.Lock()
-				items[string(cmd.Args[1])] = cmd.Args[2]
-				mu.Unlock()
-				conn.WriteString("OK")
+				var meta *mondis.VMetaReq
+				txn := kvdb.NewTransaction(true)
+				defer txn.Discard()
+
+				if len(cmd.Args) > 3 {
+					i := 3
+					for {
+						switch strings.ToLower(string(cmd.Args[i])) {
+						case "ex":
+							d, err := strconv.Atoi(string(cmd.Args[i]))
+							if err != nil {
+								writeError(conn, err)
+								return
+							}
+							duration := time.Second * time.Duration(d)
+							meta = &mondis.VMetaReq{TTL: duration}
+							i += 2
+						case "px":
+							d, err := strconv.Atoi(string(cmd.Args[i]))
+							if err != nil {
+								writeError(conn, err)
+								return
+							}
+							duration := time.Millisecond * time.Duration(d)
+							meta = &mondis.VMetaReq{TTL: duration}
+							i += 2
+						case "nx":
+							_, _, err := txn.Get(cmd.Args[1])
+							if err == kv.ErrKeyNotFound {
+								err = nil
+							} else if err == nil {
+								conn.WriteNull()
+								return
+							}
+							if err != nil {
+								writeError(conn, err)
+								return
+							}
+							i++
+						case "xx":
+							_, _, err := txn.Get(cmd.Args[1])
+							if err == kv.ErrKeyNotFound {
+								conn.WriteNull()
+								return
+							}
+							if err != nil {
+								writeError(conn, err)
+								return
+							}
+							i++
+						}
+						if i >= len(cmd.Args) {
+							break
+						}
+					}
+				}
+				err := txn.Set(cmd.Args[1], cmd.Args[2], meta)
+				if err != nil {
+					writeError(conn, err)
+					return
+				}
+				err = txn.Commit()
+				if err == nil {
+					conn.WriteString("OK")
+				} else {
+					writeError(conn, err)
+				}
+
 			case "get":
 				if len(cmd.Args) != 2 {
 					conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 					return
 				}
-				mu.RLock()
-				val, ok := items[string(cmd.Args[1])]
-				mu.RUnlock()
-				if !ok {
+
+				val, _, err := kvdb.Get(cmd.Args[1])
+				if err == kv.ErrKeyNotFound {
 					conn.WriteNull()
+				} else if err != nil {
+					writeError(conn, err)
 				} else {
 					conn.WriteBulk(val)
 				}
 			case "del":
-				if len(cmd.Args) != 2 {
+				if len(cmd.Args) < 2 {
 					conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 					return
 				}
-				mu.Lock()
-				_, ok := items[string(cmd.Args[1])]
-				delete(items, string(cmd.Args[1]))
-				mu.Unlock()
-				if !ok {
-					conn.WriteInt(0)
-				} else {
-					conn.WriteInt(1)
+
+				txn := kvdb.NewTransaction(true)
+				defer txn.Discard()
+
+				var n int
+				for i := 1; i < len(cmd.Args); i++ {
+					exists, err := txn.Exists(cmd.Args[1])
+					if err != nil {
+						writeError(conn, err)
+						return
+					}
+					if exists {
+						n++
+					} else {
+						continue
+					}
+					err = txn.Delete(cmd.Args[1])
+					if err != nil {
+						writeError(conn, err)
+						return
+					}
 				}
+
+				err := txn.Commit()
+				if err != nil {
+					writeError(conn, err)
+					return
+				}
+
+				conn.WriteInt(n)
 			}
 		},
 		func(conn redcon.Conn) bool {
@@ -93,4 +180,8 @@ func Start(l net.Listener) (err error) {
 	)
 
 	return
+}
+
+func writeError(conn redcon.Conn, err error) {
+	conn.WriteError(fmt.Sprintf("Fail: %v", err))
 }
