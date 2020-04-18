@@ -74,6 +74,12 @@ func Instance() *Store {
 	}
 	do := domain.NewDomain(kvdb)
 
+	err = do.Init()
+	if err != nil {
+		kvdb.Close()
+		logger.Instance().Fatal("do.Init", zap.Error(err))
+	}
+
 	store = &Store{kvdb: kvdb, do: do, redisDB: make(map[uint16]mondis.KVDB)}
 
 	return store

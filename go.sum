@@ -349,6 +349,14 @@ github.com/zhiqiangxu/mondis v0.0.0-20200415082508-d7c7fc21944f h1:NfEfr8I/xJrcw
 github.com/zhiqiangxu/mondis v0.0.0-20200415082508-d7c7fc21944f/go.mod h1:L82eHd9HYp9m272Lt7XPzaI4KVbiJTexdFK31uV7Ia4=
 github.com/zhiqiangxu/mondis v0.0.0-20200415105814-58fa0c1e0261 h1:k/ObGb4qOSsmcpxHu8FiPIFXPeREqlgn3JgD42+QEeg=
 github.com/zhiqiangxu/mondis v0.0.0-20200415105814-58fa0c1e0261/go.mod h1:L82eHd9HYp9m272Lt7XPzaI4KVbiJTexdFK31uV7Ia4=
+github.com/zhiqiangxu/mondis v0.0.0-20200418061713-672ae6adeb4b h1:pAB7Ll91MkVLhcl5ho1mt32gpIioItigWTeoobcyzaI=
+github.com/zhiqiangxu/mondis v0.0.0-20200418061713-672ae6adeb4b/go.mod h1:L82eHd9HYp9m272Lt7XPzaI4KVbiJTexdFK31uV7Ia4=
+github.com/zhiqiangxu/mondis v0.0.0-20200418071122-be8e42ad57a9 h1:66+Ec3obOkMs3ZhGnfiel8U/Cfb4OYoPyMItQNADjCQ=
+github.com/zhiqiangxu/mondis v0.0.0-20200418071122-be8e42ad57a9/go.mod h1:L82eHd9HYp9m272Lt7XPzaI4KVbiJTexdFK31uV7Ia4=
+github.com/zhiqiangxu/mondis v0.0.0-20200418071304-7a78b582862f h1:sIvySLkaH3DBRJkBipCVNptCO/ZVlwMJqPaiq8aXcZo=
+github.com/zhiqiangxu/mondis v0.0.0-20200418071304-7a78b582862f/go.mod h1:L82eHd9HYp9m272Lt7XPzaI4KVbiJTexdFK31uV7Ia4=
+github.com/zhiqiangxu/mondis v0.0.0-20200418073504-0b5f3a0939b4 h1:b3lNFLRjVg18Njf+9P2PO4vAwfaVDhF5By/Cz0qpJAY=
+github.com/zhiqiangxu/mondis v0.0.0-20200418073504-0b5f3a0939b4/go.mod h1:L82eHd9HYp9m272Lt7XPzaI4KVbiJTexdFK31uV7Ia4=
 github.com/zhiqiangxu/qrpc v0.0.0-20191121085610-3b68b3e2b8bd/go.mod h1:nOWIVAnyE3McYtKiBM3pZ89yvtL6NQlMeVQjR0fABeM=
 github.com/zhiqiangxu/qrpc v0.0.0-20200225135606-e2574f37b838/go.mod h1:Pn8/9dQDu/SZrXdocgZZJ2KSz5eMeR41WlKyVnq4ZWU=
 github.com/zhiqiangxu/rpheap v0.0.0-20191222053847-9002d7e5a1a1/go.mod h1:aYy7SAJP4LY667NfqoMR/ZJAy8HQ8KVtQTvEDrGS5ks=
